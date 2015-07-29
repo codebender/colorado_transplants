@@ -3,6 +3,7 @@ library(plyr)
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(maps)
 
 options(scipen = 9)
 
@@ -253,13 +254,36 @@ stateCodeCSV = "POBP,stateName
 birthPlaceCodes <- read_csv(stateCodeCSV)
 
 coBirthPlaces <- join(coBirthPlaces, birthPlaceCodes, by = "POBP")
-coBirthPlaces <- coBirthPlaces[1:20,]
 
 stateOrder <- reorder(coBirthPlaces$stateName, -coBirthPlaces$Total)
 
-ggplot(coBirthPlaces, aes(stateOrder, Total)) +
+# Top 20 sources for transplants
+ggplot(coBirthPlaces[1:20,], aes(stateOrder[1:20], Total)) +
   geom_bar(stat="identity", fill='#0072B2', color='black') +
   scale_y_continuous(breaks = seq(0, 300000, by = 50000)) +
   theme(axis.text.x=element_text(angle=90))+
   labs(title = "Top 20 Colorado Transplant Sources",
        x = "Location", y = "Total Transplanted")
+
+stateBirthPlaces <- filter(coBirthPlaces, POBP <= 56 & !(POBP %in% c(2, 15)))
+stateBirthPlaces$region <- tolower(stateBirthPlaces$stateName)
+
+us_state_map <- join(us_state_map, stateBirthPlaces, by = 'region')
+median(stateBirthPlaces$Total)
+
+ggplot(us_state_map, aes(long, lat, group=group)) + 
+  geom_polygon(aes(fill = Total), colour="black") +
+  scale_fill_gradient2() +
+  theme_light() +
+  theme(strip.background = element_blank(),
+        strip.text.x     = element_blank(),
+        axis.text.x      = element_blank(),
+        axis.text.y      = element_blank(),
+        axis.ticks       = element_blank(),
+        axis.line        = element_blank(),
+        panel.border     = element_blank(),
+        panel.grid       = element_blank(),
+        legend.position  = "right") +
+  xlab("") + ylab("") +
+  labs(title = "Where are Colorado's Transplants from?",
+       fill = 'Number of\nTransplants')
